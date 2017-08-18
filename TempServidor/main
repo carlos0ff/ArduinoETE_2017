@@ -1,0 +1,135 @@
+/*
+Programa : Sensor de temperatura LM35 para computadores
+Desenvolvido por:   	1 - 
+			2 - 
+			3 - 
+Sob tutoria de:		1 - 
+			2 - 
+*/
+
+#include <LiquidCrystal.h> //inclui a biblioteca do LCD
+
+int pinLM35 = A0; // Pino analogico para ligacao do LM35
+const int buzzer = 10; // Variável que guarda o buzzer
+LiquidCrystal lcd(9, 8, 5, 4, 3, 2); //Define os pinos que serão ligados ao LCD
+int tempc;
+int maxtemp = 100;  // Variável que guarda a temperatura máxima
+int mintemp = -100;  // Variável que guarda a temperatura mínima
+byte grauSimbolo[8]= {B00110,B01001,B00110,B00000,B00000,B00000,B00000,B00000}; //Array que desenha o simbolo de grau
+int saidaLCD1 = 9;
+int saidaLCD2 = 8;
+int portaLedVerde = 13;
+int portaLedAmerelo = 11;
+int portaLedVermelho = 12;
+int qtdColunaLCD = 16;
+int qtdLinhaLCD = 2;
+
+
+void setup()
+{
+  Serial.begin(9600);     // Inicializa comunicação serial
+  pinMode(portaLedVerde, OUTPUT);    // Define pino de saída do led verde
+  pinMode(portaLedVermelho, OUTPUT);    // Define pino de saída do led vermelho
+  pinMode(portaLedAmerelo, OUTPUT);   // Define pino de saída do led amarelo
+  pinMode(buzzer, OUTPUT); //Define pino 10 como saida (buzzer)
+  pinMode(saidaLCD1, OUTPUT); //Saida1 LCD
+  pinMode(saidaLCD2, OUTPUT); //Saida2 LCD
+  lcd.begin(qtdColunaLCD, qtdLinhaLCD); //Inicializa LCD
+  lcd.print("Temp. Atual: ");
+  lcd.createChar(1, grauSimbolo);  //Atribui a "1" o valor do array "A", que desenha o simbolo de grau
+  lcd.setCursor(7,1); //Coloca o cursor na coluna 7, linha 1
+  lcd.write(1); //Escreve o simbolo de grau
+  lcd.setCursor(15,0);
+  lcd.write(1);
+  lcd.setCursor(15,1);
+  lcd.write(1);
+}
+
+void loop()
+{
+	for(i = 0;i<=7;i++)// Loop que faz a leitura da temperatura 8 vezes
+	{ 
+		samples[i] = ( 5.0 * analogRead(pinLM35) * 100.0) / 1024.0;
+		//A cada leitura, incrementa o valor da variavel tempc
+		tempc = tempc + samples[i]; 
+		delay(100);
+	}
+
+	// Divide a variavel tempc por 8, para obter precisão na medição
+	tempc = tempc/8.0; 
+	//Armazena a temperatura máxima na variável maxtemp
+	if(tempc > maxtemp)
+		maxtemp = tempc;
+	//Armazena a temperatura máxima na vari[avel mintemp
+	if(tempc < mintemp)
+		mintemp = tempc; 
+
+	//Se a temperatura estiver abaixo de 24, acende o led verde
+	if(tempc < 24) 
+	{
+		digitalWrite(buzzer, LOW);
+		digitalWrite(13, HIGH);
+		digitalWrite(portaLedVermelho, LOW);
+		digitalWrite(portaLedAmerelo, LOW);
+	}
+
+	//Se a temperatura estiver acima de 24, acende o led amarelo
+	if(tempc > 24 && tempc < 30) 
+	{
+		digitalWrite(buzzer, LOW);
+		digitalWrite(portaLedVermelho, LOW);
+		digitalWrite(portaLedVerde13, LOW);
+		digitalWrite(portaLedAmerelo, HIGH);
+	}
+
+	//Se a temperatura estiver acima de 30, acende o led vermelho
+	if(tempc > 30 && tempc < 34)
+	{
+		digitalWrite(buzzer,LOW);
+		digitalWrite(portaLedAmerelo, LOW);
+		digitalWrite(portaLedVermelho, HIGH);
+		digitalWrite(portaLedVerde, LOW);
+	}
+	if(tempc > 35) 
+	{
+		digitalWrite(portaLedAmerelo, LOW);
+		digitalWrite(portaLedVermelho, HIGH);
+		digitalWrite(portaLedVerde, LOW);
+		delay(500);
+	}
+	if(tempc > 35) 
+	{
+		//Ligando o buzzer com uma frequencia de 4000 hz.
+		tone(buzzer,4000);   
+		delay(99000);
+
+		noTone(buzzer); //Desligando o buzzer.
+		delay(500); 
+	} 
+
+	// As linhas abaixo enviam para o monitor serial a temperatura em Celsius 
+	// e também as temperaturas máxima e mínima registradas
+
+	Serial.print(tempc,DEC);
+	Serial.print(" Cels., ");
+	Serial.print(" Min : ");
+	Serial.print(mintemp,DEC);
+	Serial.print("  Max: ");
+	Serial.println(maxtemp,DEC);
+
+	delay(100); 
+	lcd.setCursor(13, 0);
+	lcd.print(tempc,DEC); //Escreve no display o valor da temperatura
+	lcd.setCursor(0, 1);
+	lcd.print("Min:"); 
+	lcd.setCursor(5,1);  //Posiciona o cursor na coluna 5, linha 1 do display
+	lcd.print(mintemp,DEC); //Escreve no display o valor da temperatura minima
+	lcd.setCursor(saidaLCD1, 1); //Posiciona o cursor na coluna 9, linha 1 do display
+	lcd.print("Max: ");  //Escreve no display o valor da temperatura maxima
+	lcd.setCursor(portaLedVerde,1);
+	lcd.print(maxtemp,DEC);
+
+	tempc = 0;
+	delay(1000); // Aguarda 1 segundo e reinicia o processo
+}
+
