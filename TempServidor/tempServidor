@@ -1,0 +1,121 @@
+
+//Programa : Sensor de temperatura LM35
+
+int pin = A0; // Pino analogico para ligacao do LM35
+#include <LiquidCrystal.h> //inclui a biblioteca do LCD
+// Variaveis que armazenam a temperatura em Celsius
+int tempc = 0; 
+int samples[8]; // Array para precisão na medição
+int maxtemp = -100,mintemp = 100; // Variáveis que guardam a temperatura máxima e mínima
+int i;
+const int buzzer = 10;
+LiquidCrystal lcd(9, 8, 5, 4, 3, 2);//Define os pinos que serão ligados ao LCD
+byte a[8]= {B00110,B01001,B00110,B00000,B00000,B00000,B00000,B00000,}; //Array que desenha o simbolo de grau
+
+void setup()
+{
+  Serial.begin(9600);     // Inicializa comunicação serial
+  pinMode(13, OUTPUT);    // Define pino 13 como saída (led verde)
+  pinMode(12, OUTPUT);    // Define pino 12 como saída (led vermelho)
+  pinMode(11, OUTPUT);   // Define pino 11 como saída (led amarelo)
+  pinMode(10, OUTPUT); //Define pino 10 como saida (buzzer)
+  pinMode(9, OUTPUT); //Saida LCD
+  pinMode(8, OUTPUT); //Saida LCD
+  lcd.begin(16, 2); //Inicializa 
+  lcd.print("Temp. Atual: ");
+ 
+  lcd.createChar(1, a);  //Atribui a "1" o valor do array "A", que desenha o simbolo de grau
+  lcd.setCursor(7,1); //Coloca o cursor na coluna 7, linha 1
+  lcd.write(1); //Escreve o simbolo de grau
+  lcd.setCursor(15,0);
+  lcd.write(1);
+  lcd.setCursor(15,1);
+  lcd.write(1);
+}
+
+void loop()
+{
+  for(i = 0;i<=7;i++){ // Loop que faz a leitura da temperatura 8 vezes
+    samples[i] = ( 5.0 * analogRead(pin) * 100.0) / 1024.0;
+    //A cada leitura, incrementa o valor da variavel tempc
+    tempc = tempc + samples[i]; 
+  delay(100);
+}
+
+// Divide a variavel tempc por 8, para obter precisão na medição
+tempc = tempc/8.0; 
+//Armazena a temperatura máxima na variável maxtemp
+if(tempc > maxtemp) {maxtemp = tempc;} 
+//Armazena a temperatura máxima na vari[avel mintemp
+if(tempc < mintemp) {mintemp = tempc;} 
+
+//Se a temperatura estiver abaixo de 24, acende o led verde
+if(tempc < 24) 
+  {
+    digitalWrite(10, LOW);
+    digitalWrite(13, HIGH);
+    digitalWrite(12, LOW);
+    digitalWrite(11, LOW);
+  }
+
+//Se a temperatura estiver acima de 24, acende o led amarelo
+if(tempc > 24 && tempc < 30) 
+  {
+    digitalWrite(10, LOW);
+    digitalWrite(12, LOW);
+    digitalWrite(13, LOW);
+    digitalWrite(11, HIGH);
+  }
+
+//Se a temperatura estiver acima de 30, acende o led vermelho
+if(tempc > 30 && tempc < 34)
+  {
+    digitalWrite(10,LOW);
+    digitalWrite(11, LOW);
+    digitalWrite(12, HIGH);
+    digitalWrite(13, LOW);
+  }
+  if(tempc > 35) 
+  {
+    digitalWrite(11, LOW);
+    digitalWrite(12, HIGH);
+    digitalWrite(13, LOW);
+    delay(500);
+  }
+    if(tempc > 35) 
+    {
+        //Ligando o buzzer com uma frequencia de 4000 hz.
+  tone(buzzer,4000);   
+  delay(99000);
+   
+  noTone(buzzer); //Desligando o buzzer.
+  delay(500); 
+    } 
+
+// As linhas abaixo enviam para o monitor serial a temperatura em Celsius 
+// e também as temperaturas máxima e mínima registradas
+
+Serial.print(tempc,DEC);
+Serial.print(" Cels., ");
+Serial.print(" Min : ");
+Serial.print(mintemp,DEC);
+Serial.print("  Max: ");
+Serial.println(maxtemp,DEC);
+
+delay(100); 
+lcd.setCursor(13, 0);
+lcd.print(tempc,DEC); //Escreve no display o valor da temperatura
+lcd.setCursor(0, 1);
+lcd.print("Min:"); 
+lcd.setCursor(5,1);  //Posiciona o cursor na coluna 5, linha 1 do display
+lcd.print(mintemp,DEC); //Escreve no display o valor da temperatura minima
+lcd.setCursor(9, 1); //Posiciona o cursor na coluna 9, linha 1 do display
+lcd.print("Max: ");  //Escreve no display o valor da temperatura maxima
+lcd.setCursor(13,1);
+lcd.print(maxtemp,DEC);
+
+
+tempc = 0;
+delay(1000); // Aguarda 1 segundo e reinicia o processo
+}
+
